@@ -1,0 +1,325 @@
+<!doctype html>
+<html>
+<!--
+  ______________
+|[]            |
+|  __________  |
+|  | Alicia |  |
+|  | Sykes  |  |
+|  |________|  |
+|   ________   |
+|   [ [ ]  ]   |
+\___[_[_]__]___| 
+  -->
+<head>
+  <!-- COMMON TAGS -->
+  <meta charset="utf-8">
+  <title>AHK to Espanso Convertor</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <!-- Search Engine -->
+  <meta name="description" content="A quick tool for translating Auto-Hot-Key scripts into Espanso configs">
+  <meta name="image" content="https://i.ibb.co/R05xhJ9/bot-square.png">
+  <!-- Schema.org for Google -->
+  <meta itemprop="name" content="AHK to Espanso Convertor">
+  <meta itemprop="description" content="A quick tool for translating Auto-Hot-Key scripts into Espanso configs">
+  <meta itemprop="image" content="https://i.ibb.co/R05xhJ9/bot-square.png">
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="AHK to Espanso Convertor">
+  <meta name="twitter:description" content="A quick tool for translating Auto-Hot-Key scripts into Espanso configs">
+  <meta name="twitter:site" content="@Lissy_Sykes">
+  <meta name="twitter:image:src" content="https://i.ibb.co/R05xhJ9/bot-square.png">
+  <!-- Open Graph general (Facebook, Pinterest & Google+) -->
+  <meta name="og:title" content="AHK to Espanso Convertor">
+  <meta name="og:description" content="A quick tool for translating Auto-Hot-Key scripts into Espanso configs">
+  <meta name="og:image" content="https://i.ibb.co/wJRxkg6/screenshot.png">
+  <meta name="og:url" content="https://ahk-to-espanso.as93.net/">
+  <meta name="og:site_name" content="AHK to Espanso Convertor">
+  <meta name="og:locale" content="en_GB">
+  <meta name="og:type" content="website">
+</head>
+<body>
+  <!-- Page Title + Description -->
+  <header>
+    <h1>AHK to Espanso Convertor</h1>
+    <p class="subtitle">
+      A quick tool for translating Auto-Hot-Key scripts into Espanso configs
+    </p>
+  </header>
+  <!-- Config input and settings section -->
+  <section class="input-section">
+    <h3>Input</h3>
+    <textarea id="input-textarea" placeholder="Paste your AHK config here..."></textarea>
+    <div class="options">
+      <label for="sortAlphabetically" title="Sort the output alphabetically">Sort Alphabetically</label>
+      <input type="checkbox" id="sortAlphabetically" name="sortAlphabetically" checked>
+      <label for="removeDuplicates" title="Don't include duplicates in results">Remove Duplicates</label>
+      <input type="checkbox" id="removeDuplicates" name="removeDuplicates" checked>
+      <label for="asWord" title="Espanso will apply changes after space is pressed">As Word</label>
+      <input type="checkbox" id="asWord" name="asWord" checked>
+      <label for="propagateCase" title="Espanso will keep the current case for expanded words">Propagate Case</label>
+      <input type="checkbox" id="propagateCase" name="propagateCase" checked>
+    </div>
+    <button id="generate-button">Generate</button>
+  </section>
+  <!-- Results output section -->
+  <section class="output-section">
+    <h3>Output</h3>
+    <pre><code id="output-code"></code></pre>
+  </section>
+  <!-- Page footer -->
+  <footer>
+    <p class="author">
+      © <a href="https://aliciasykes.com">Alicia Sykes</a> 2022.
+      Licensed under <a href="https://gist.github.com/Lissy93/143d2ee01ccc5c052a17">MIT</a>
+    </p>
+  </footer>
+  <!-- Converting functionality with JavaScript -->
+  <script>
+  /* Given plaintext body, and optional options, make Espanso config */
+  function convertAHKInput (body, options = {}) {
+    const { sortAlphabetically, removeDuplicates, propagateCase, asWord } = options;
+    let result = [];
+    let lines = body.split(/\r?\n/);
+    if (sortAlphabetically) lines = lines.sort((a, b) => a.localeCompare(b));
+    if (removeDuplicates) lines = [...new Set(lines)];
+    lines.forEach((line)=>{
+      if(line.startsWith('::')){
+        let parts = line.split('::');
+        let espansoObj = { trigger: parts[1].trim(), replace: parts[2].trim() };
+        if (propagateCase) espansoObj = { ...espansoObj, ...{ propagate_case: true } }
+        if (asWord) espansoObj = { ...espansoObj, ...{ word: true  } };
+        result.push(espansoObj);
+      }
+    });
+    // Convert JSON result into YAML and return
+    return json2yaml(result);
+  }
+
+  /**
+   * Page actions - Written in retro 2004 JavaScript
+   * On button click, takes value from input, calls generator function
+   * and displays the results into the output section
+   */
+  var generateButton = document.getElementById("generate-button");
+  generateButton.addEventListener("click", function () {
+    // Get input text from textarea
+    var input = document.getElementById("input-textarea").value; 
+    // Get all the input options
+    var propagateCase = document.getElementById('propagateCase').checked;
+    var asWord = document.getElementById('asWord').checked;
+    var sortAlphabetically = document.getElementById('sortAlphabetically').checked;
+    var removeDuplicates = document.getElementById('removeDuplicates').checked;
+    var options = { sortAlphabetically, removeDuplicates, propagateCase, asWord };
+    document.getElementsByClassName('output-section')[0].style.display = 'block';
+    // Calculate result, and display in the output field
+    var output = convertAHKInput(input, options);
+    if (input === '') output = 'Error, input was empty';
+    document.getElementById('output-code').innerHTML = output;
+  });
+
+    var spacing = "  ";
+
+  /* Convert JSON object into YAML string */
+  json2yaml = function(obj) {
+    const getType = (obj) => {
+      var type = typeof obj;
+      if (obj instanceof Array) {
+        return 'array';
+      } else if (type == 'string') {
+        return 'string';
+      } else if (type == 'boolean') {
+        return 'boolean';
+      } else if (type == 'number') {
+        return 'number';
+      } else if (type == 'undefined' || obj === null) {
+        return 'null';
+      } else {
+        return 'hash';
+      }
+    }
+
+    const convert = (obj, ret) => {
+      var type = getType(obj);
+      switch(type) {
+        case 'array':
+        convertArray(obj, ret);
+        break;
+        case 'hash':
+        convertHash(obj, ret);
+        break;
+        case 'string':
+        convertString(obj, ret);
+        break;
+        case 'null':
+        ret.push('null');
+        break;
+        case 'number':
+        ret.push(obj.toString());
+        break;
+        case 'boolean':
+        ret.push(obj ? 'true' : 'false');
+        break;
+      }
+    }
+
+    const convertArray = (obj, ret) => {
+      if (obj.length === 0) {
+        ret.push('[]');
+      }
+      for (var i=0; i<obj.length; i++) {
+
+        var ele     = obj[i];
+        var recurse = [];
+        convert(ele, recurse);
+
+        for (var j=0; j<recurse.length; j++) {
+        ret.push((j == 0 ? "- " : spacing) + recurse[j]);
+        }
+      }
+    }
+
+    const convertHash = (obj, ret) => {
+      for (var k in obj) {
+        var recurse = [];
+        if (obj.hasOwnProperty(k)) {
+        var ele = obj[k];
+        convert(ele, recurse);
+        var type = getType(ele);
+        if (type == 'string' || type == 'null' || type == 'number' || type == 'boolean') {
+          ret.push(normalizeString(k) + ': ' +  recurse[0]);
+        } else {
+          ret.push(normalizeString(k) + ': ');
+          for (var i=0; i<recurse.length; i++) {
+          ret.push(spacing + recurse[i]);
+          }
+        }
+        }
+      }
+    }
+
+    const normalizeString = (str) => {
+      if (str.match(/^[\w]+$/)) {
+        return str;
+      } else {
+        return '"'+escape(str).replace(/%u/g,'\\u').replace(/%U/g,'\\U').replace(/%/g,'\\x')+'"';
+      }
+    }
+
+    const convertString = (obj, ret) => {
+      ret.push(normalizeString(obj));
+    }
+    // Start converting...
+    if (typeof obj == 'string') obj = JSON.parse(obj);
+    var ret = [];
+    convert(obj, ret);
+    return ret.join("\n");
+  };
+	  
+</script>
+<!-- Page styles with CSS -->
+<style>
+	body {
+	   font-family: "Roboto", Verdana, Helvetica, sans-serif;
+	   color: #fff;
+	   background: #0d0e20;
+	   padding-bottom: 2rem;
+	}
+	h1 {
+    font-weight: normal;
+	  font-size: 2.5rem;
+	  text-align: center;
+    margin: 1rem;
+	}
+  p.subtitle {
+    color: #fff;
+    font-size: 1rem;
+    text-align: center;
+    font-style: italic;
+    opacity: 0.8;
+  }
+	h3 {
+	  margin: 0;
+	}
+
+	textarea, button, pre {
+	  color: #fff;
+	  font-family: courier, sans-serif;
+	  height: 150px;
+	  outline: none;
+	  border: 2px solid #00010a8c;
+	  border-radius: 5px;
+	  margin: 1rem;
+	  background: #0d0e20;
+	}
+
+	textarea {
+	  resize:none;
+	}
+
+	button {
+	  height: 2.5rem;
+	  margin: 1rem;
+	  font-size: 1rem;
+	  font-weight: thin;
+	  font-family: "Roboto", Verdana, Helvetica, sans-serif;
+	  cursor: pointer;
+	}
+
+	pre {
+	  min-height: 150px;
+	  height: fit-content;
+	  overflow: hidden;
+	  padding: 0.5rem;
+	}
+
+	textarea:focus, button:hover {
+	  background: #00010a8c;
+	}
+
+	.input-section, .output-section {
+	  display: flex;
+	  flex-direction: column;
+	  align-items: stretch;
+	  margin: 1rem auto;
+	  padding: 1rem;
+	  border-radius: 5px;
+	  background: #ffffff0a;
+	  box-shadow: 2px 10px 10px rgb(0 0 0 / 33%), 0 1px 2px rgba(0,0,0,0.24);
+	  max-width: 800px;
+	}
+  .output-section {
+    display: none;
+  }
+
+  .options {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .options input, .options label {
+    padding: 0.25rem;
+  }
+  .options label:not(:first-child)::before { content: '|'; margin: 0 1rem; }
+
+
+  footer {
+    position: fixed;
+    width: 100%;
+    bottom: 0;
+    opacity: 0.8;
+    padding: 1rem 0;
+  }
+  footer p.author {
+    margin: 0;
+    color: #fff;
+    font-size: 0.8rem;
+    text-align: center;
+  }
+  footer p.author a {
+    color: #fff;
+  }
+
+  </style>
+</body>
+</html>
